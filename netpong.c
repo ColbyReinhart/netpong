@@ -31,8 +31,8 @@ int playerPoints = 0;
 int opponentPoints = 0;
 
 // USAGE:
-// Server: ./netpong -s PORT
-// Client: ./netpong -c HOSTNAME:PORT
+// Server: ./netpong PORT
+// Client: ./netpong HOSTNAME PORT
 int main(int argc, char* argv[])
 {
 	// Get player's name
@@ -55,20 +55,19 @@ int main(int argc, char* argv[])
 	// Setup
 	//
 
-	if (argc != 3) printUsage();
 	strcpy(errorMessage, "");
 
 	// Are we running in server mode?
-	if (strcmp(argv[1], "-s") == 0)
+	if (argc == 2)
 	{
 		isClient = 0;
-		sock_fd = serverSetup(argv[2]);
+		sock_fd = serverSetup(argv[1]);
 	}
 	// Are we running in client mode?
-	else if (strcmp(argv[1], "-c") == 0)
+	else if (argc == 3)
 	{
 		isClient = 1;
-		sock_fd = clientSetup(argv[2]);
+		sock_fd = clientSetup(argv[1], argv[2]);
 	}
 	else
 	{

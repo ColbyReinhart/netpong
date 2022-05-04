@@ -183,35 +183,10 @@ int serverSetup(char* portnum)
 }
 
 // Create a socket and call the server provided
-int clientSetup(char* server_creds)
+int clientSetup(char* host, char* port)
 {
 	struct sockaddr_in server_addr;	// Server address information
 	struct hostent* host_info;		// Host information
-	char hostname[HOSTLEN];			// Buffer to store host name
-	char portnum[BUFSIZ];			// Buffer to store port number
-
-	// Parse arguments
-	{
-		int i;
-
-		// Get hostname
-		for (i = 0; i < HOSTLEN && server_creds[i] != ':'; ++i)
-		{
-			if (server_creds[i] == 0) printUsage();
-			hostname[i] = server_creds[i];
-		}
-		hostname[i] = 0;	// Null terminate hostname
-		++i;				// Increment i to move past the colon
-
-		// Get port
-		int portStartPos = i;
-		while (server_creds[i] != 0)
-		{
-			portnum[i - portStartPos] = server_creds[i];
-			++i;
-		}
-		portnum[++i] = 0;	// Null terminate portnum
-	}
 
 	// Get a socket to talk to the server
 	int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -219,14 +194,14 @@ int clientSetup(char* server_creds)
 
 	// Build the address of the server specified
 	bzero(&server_addr, sizeof(server_addr));
-	host_info = gethostbyname(hostname);
+	host_info = gethostbyname(host);
 	if( host_info == NULL) errorQuit("Couldn't get server host");
 	bcopy(
 		host_info->h_addr,
 		(struct sockaddr*)&server_addr.sin_addr,
 		host_info->h_length
 	);
-	server_addr.sin_port = htons(atoi(portnum));
+	server_addr.sin_port = htons(atoi(port));
 	server_addr.sin_family = AF_INET;
 
 	// Dial the server

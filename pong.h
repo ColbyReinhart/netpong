@@ -65,7 +65,7 @@
 
 void printUsage();
 int serverSetup(char* portnum);
-int clientSetup(char* server_creds);
+int clientSetup(char* host, char* port);
 int socket_check(int readResult);
 int serverIntro(int sock_fd);
 int clientIntro(int sock_fd);
