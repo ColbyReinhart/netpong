@@ -337,6 +337,18 @@ int interpretResponse(int response)
 			exit(1);
 		}
 
+		// If this is the server, we need to wait for the client to close first
+		if (!isClient)
+		{
+			char temp[BUFSIZ];
+			if (read(sock_fd, temp, BUFSIZ) == -1)
+			{
+				strcpy(errorMessage, "Could not wait for client to close");
+				wrap_up();
+				exit(1);
+			}
+		}
+
 		wrap_up();
 		exit(0);
 	}
@@ -344,6 +356,17 @@ int interpretResponse(int response)
 	// Did the opponent say it's time to quit?
 	else if (response == QUIT)
 	{
+		// If this is the client, we need to tell the server we quit so it can too
+		if (isClient)
+		{
+			char temp[BUFSIZ] = "CLOSE";
+			if (write(sock_fd, temp, BUFSIZ) == -1)
+			{
+				strcpy(errorMessage, "Could not tell server to close");
+				wrap_up();
+				exit(1);
+			}
+		}
 		wrap_up();
 		exit(0);
 	}
