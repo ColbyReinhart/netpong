@@ -129,7 +129,6 @@ int main(int argc, char* argv[])
 		// Show serving prompt
 		const int msgSize = 26;
 		const char str[] = "Opponent is serving . . .";
-		const char eraser[] = "                         ";
 		move(TOP_ROW + (netHeight / 2), (LEFT_EDGE + RIGHT_EDGE) / 2 - (msgSize / 2));
 		addstr(str);
 		move(LINES - 1, COLS - 1);
@@ -142,13 +141,14 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
+		interpretResponse(getResponse(sock_fd));
+
 		// Erase prompt
 		move(TOP_ROW + (netHeight / 2), (LEFT_EDGE + RIGHT_EDGE) / 2 - (msgSize / 2));
+		const char eraser[] = "                         ";
 		addstr(eraser);
 		move(LINES - 1, COLS - 1);
 		refresh();
-
-		interpretResponse(getResponse(sock_fd));
 	}
 
 	int c;
