@@ -21,25 +21,10 @@ extern int isClient;
 
 void draw_paddle()
 {
-	// Draw the paddle
 	for (int i = paddle.pad_top; i <= paddle.pad_bot; ++i)
 	{
 		mvaddch(i, paddle.pad_col, paddle.pad_char);
 	}
-
-	/// Clear the area around the paddle (just in case)
-
-	// // Above
-	// for (int i = TOP_ROW; i < paddle.pad_top; ++i)
-	// {
-	// 	mvaddch(i, paddle.pad_col, BLANK);
-	// }
-
-	// // Below
-	// for (int i = paddle.pad_bot + 1; i <= BOT_ROW; ++i)
-	// {
-	// 	mvaddch(i, paddle.pad_col, BLANK);
-	// }
 }
 
 void paddle_init()

@@ -412,7 +412,7 @@ int bounce_or_lose(struct ppball* bp)
 	// If we hit the paddle
 	if (paddle_contact(bp->y_pos, bp->x_pos))
 	{
-		bp->x_dir *= -1;
+		bp->x_dir = isClient ? 1 : -1;
 
 		// Randomize speed of ball
 		the_ball.y_ttg = the_ball.y_ttm = (rand() % (MAX_Y_TTM - MIN_Y_TTM) + MIN_Y_TTM);
