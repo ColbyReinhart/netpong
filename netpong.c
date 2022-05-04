@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 
-		interpretResponse(getResponse(sock_fd));
+		int result = interpretResponse(getResponse(sock_fd));
 
 		// Erase prompt
 		move(TOP_ROW + (netHeight / 2), (LEFT_EDGE + RIGHT_EDGE) / 2 - (msgSize / 2));
@@ -149,6 +149,11 @@ int main(int argc, char* argv[])
 		addstr(eraser);
 		move(LINES - 1, COLS - 1);
 		refresh();
+
+		if (result == LOSE)
+		{
+			serve();
+		}
 	}
 
 	int c;
