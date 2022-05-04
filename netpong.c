@@ -19,6 +19,7 @@ extern int ticksPerSecond;
 extern int netHeight;
 extern char playerName[MAX_NAMESIZE];
 extern char opponentName[MAX_NAMESIZE];
+extern char errorMessage[SPPBTP_MAX_MSG_LENGTH];
 
 // Game variables
 struct ppball the_ball;
@@ -30,7 +31,7 @@ int playerPoints = 0;
 int opponentPoints = 0;
 
 // USAGE:
-// Server: ./netpong -s PORTNUM_TO_USE
+// Server: ./netpong -s PORT
 // Client: ./netpong -c HOSTNAME:PORT
 int main(int argc, char* argv[])
 {
@@ -55,6 +56,7 @@ int main(int argc, char* argv[])
 	//
 
 	if (argc != 3) printUsage();
+	strcpy(errorMessage, "");
 
 	// Are we running in server mode?
 	if (strcmp(argv[1], "-s") == 0)
@@ -102,6 +104,7 @@ int main(int argc, char* argv[])
 
 	set_up();
 
+	// Client setup
 	if (isClient)
 	{
 		if (getResponse(sock_fd) == SERV)
@@ -113,20 +116,17 @@ int main(int argc, char* argv[])
 		{
 			wrap_up();
 			printf("Error: expected SERV from server\n");
-			if (sendResponse(sock_fd, QUIT) == -1)
-			{
-				wrap_up();
-				printf("Error: could not send message to opponent\n");
-				exit(1);
-			}
+			sendResponse(sock_fd, QUIT);
 			exit(1);
 		}
 	}
+
+	// Server setup
 	else
 	{
 		printStatus();
 
-		// Show prompt
+		// Show serving prompt
 		const int msgSize = 26;
 		const char str[] = "Opponent is serving . . .";
 		const char eraser[] = "                         ";
@@ -139,18 +139,18 @@ int main(int argc, char* argv[])
 		if (sendResponse(sock_fd, SERV) == -1)
 		{
 			wrap_up();
-			printf("Error: could not send message to opponent\n");
 			exit(1);
 		}
-		interpretResponse(getResponse(sock_fd));
 
 		// Erase prompt
 		move(TOP_ROW + (netHeight / 2), (LEFT_EDGE + RIGHT_EDGE) / 2 - (msgSize / 2));
 		addstr(eraser);
 		move(LINES - 1, COLS - 1);
 		refresh();
+
+		interpretResponse(getResponse(sock_fd));
 	}
-	
+
 	int c;
 	while ((c = getchar()) != 'Q')
 	{
@@ -163,11 +163,8 @@ int main(int argc, char* argv[])
 	if (sendResponse(sock_fd, DONE) == -1)
 	{
 		wrap_up();
-		printf("Error: could not send message to opponent\n");
 		exit(1);
 	}
-
-	// Did the opponent quit?
 	interpretResponse(getResponse(sock_fd));
 }
 
@@ -239,6 +236,12 @@ void wrap_up()
 	set_ticker(0);
 	close(sock_fd);
 	endwin();
+	
+	// Print error messages, if any
+	if (strlen(errorMessage) != 0)
+	{
+		printf("Error: %s\n", errorMessage);
+	}
 
 	// Announce winner
 	printf("Game over!\nThe winner is: ");
@@ -276,7 +279,6 @@ int interpretResponse(int response)
 	if (response == ERROR)
 	{
 		wrap_up();
-		printf("Error: received negative status indicator from opponent\n");
 		exit(1);
 	}
 
@@ -314,7 +316,6 @@ int interpretResponse(int response)
 			if (sendResponse(sock_fd, DONE) == -1)
 			{
 				wrap_up();
-				printf("Error: could not send message to opponent\n");
 				exit(1);
 			}
 
@@ -329,15 +330,14 @@ int interpretResponse(int response)
 	//Did the opponent say the game is over?
 	else if (response == DONE)
 	{
-		wrap_up();
-
 		// Send back a quit response
 		if (sendResponse(sock_fd, QUIT) == -1)
 		{
-			printf("Error: could not send message to opponent\n");
+			wrap_up();
 			exit(1);
 		}
 
+		wrap_up();
 		exit(0);
 	}
 
@@ -371,7 +371,6 @@ int passToOpponent()
 	if (sendResponse(sock_fd, BALL) == -1)
 	{
 		wrap_up();
-		printf("Error: could not send message to opponent\n");
 		exit(1);
 	}
 
@@ -398,7 +397,6 @@ int playerMissed()
 	if (sendResponse(sock_fd, MISS) == -1)
 	{
 		wrap_up();
-		printf("Error: could not send message to opponent\n");
 		exit(1);
 	}
 

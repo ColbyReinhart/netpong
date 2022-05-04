@@ -8,6 +8,7 @@ int ticksPerSecond;				// Ticks per second
 int netHeight;					// Height of the net
 char playerName[MAX_NAMESIZE];	// Player's name
 char opponentName[MAX_NAMESIZE];// Opponent's name
+char errorMessage[SPPBTP_MAX_MSG_LENGTH];
 
 // Game variables
 int balls_left;					// Number of balls left in play
@@ -175,6 +176,9 @@ int serverSetup(char* portnum)
 	if (sock_fd == -1) errorQuit("Couldn't accept client socket call");
 	printf("Connected to client.\n");
 
+	// Close the listening socket to free up the port
+	close(listen_socket);
+
 	return sock_fd;
 }
 
@@ -277,22 +281,24 @@ int serverIntro(int sock_fd)
 	}
 	if (strcmp(responseList[0], "NAME") != 0)
 	{
-		char errorMsg[SPPBTP_MAX_ARG_LENGTH];
-		sprintf(errorMsg, "Expected NAME response, got %s", responseList[0]);
-		printf("Error: %s\n", errorMsg);
+		sprintf(errorMessage, "Expected NAME response, got %s", responseList[0]);
+		printf("Error: %s\n", errorMessage);
 		// Send negative status indicator
-		sendNegativeStatus(sock_fd, errorMsg);
+		sendNegativeStatus(sock_fd, errorMessage);
 		return -1;
 	}
 	// Check client version
 	if (strcmp(responseList[1], GAME_VERSION) != 0)
 	{
-		printf
+		sprintf
 		(
-			"Error: Server is using ver%s but client is using ver%s\n",
+			errorMessage,
+			"Error: Server is using ver%s but client is using ver%s",
 			GAME_VERSION,
 			responseList[1]
 		);
+		printf("Error: %s\n", errorMessage);
+		sendNegativeStatus(sock_fd, errorMessage);
 		return -1;
 	}
 	// Read client name
@@ -322,11 +328,10 @@ int clientIntro(int sock_fd)
 	}
 	if (strcmp(responseList[0], "HELO") != 0)
 	{
-		char errorMsg[SPPBTP_MAX_ARG_LENGTH];
-		sprintf(errorMsg, "Expected HELO response, got %s", responseList[0]);
-		printf("Error: %s\n", errorMsg);
+		sprintf(errorMessage, "Expected HELO response, got %s", responseList[0]);
+		printf("Error: %s\n", errorMessage);
 		// Send negative status indicator
-		sendNegativeStatus(sock_fd, errorMsg);
+		sendNegativeStatus(sock_fd, errorMessage);
 		return -1;
 	}
 	// Check server version
@@ -373,7 +378,7 @@ int clientIntro(int sock_fd)
 // This is intended to be used only in the playing phase
 // Possible response headers: SERV, BALL, MISS, QUIT, DONE
 // Input: socket file descriptor to read from
-// Returns response type on success, -1 on error
+// Returns response type
 int getResponse(int sock_fd)
 {
 	// Wait for response
@@ -384,16 +389,15 @@ int getResponse(int sock_fd)
 
 	// Interpret response
 	char** responseList = parseResponse(comm_buffer);
-	// Check response header
 	
 	// Was there an error?
 	if (strcmp(responseList[0], "?ERR") == 0)
 	{
-		printf("Error: server returned negative status indicator\n");
-		return -1;
+		sprintf(errorMessage, "Received negative status indicator: %s", responseList[1]);
+		return ERROR;
 	}
-	
-	// Should we serve?
+
+	// Should we serve the first ball?
 	else if (strcmp(responseList[0], "SERV") == 0)
 	{
 		balls_left = atoi(responseList[1]);
@@ -431,10 +435,9 @@ int getResponse(int sock_fd)
 	// If the message was something else, return error
 	else
 	{
-		char errorMsg[SPPBTP_MAX_MSG_LENGTH];
-		sprintf(errorMsg, "Bad response: %s", responseList[0]);
-		sendNegativeStatus(sock_fd, errorMsg);
-		return -1;
+		sprintf(errorMessage, "Bad response: %s", responseList[0]);
+		sendNegativeStatus(sock_fd, errorMessage);
+		return ERROR;
 	}
 }
 
