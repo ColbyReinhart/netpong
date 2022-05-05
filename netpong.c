@@ -38,20 +38,9 @@ int gameOver = 0;
 int main(int argc, char* argv[])
 {
 	// Get player's name
-	///printf("Enter your name: ");
-	///fgets(playerName, MAX_NAMESIZE, stdin);
-	///playerName[strcspn(playerName, "\n")] = 0; // Remove newline
-	
-	/////
-	if (strcmp(argv[1], "-s") == 0)
-	{
-		strcpy(playerName, "Server");
-	}
-	else
-	{
-		strcpy(playerName, "Client");
-	}
-	/////
+	printf("Enter your name: ");
+	fgets(playerName, MAX_NAMESIZE, stdin);
+	playerName[strcspn(playerName, "\n")] = 0; // Remove newline
 
 	//
 	// Setup

@@ -24,7 +24,6 @@
 #define LOSE 0		// Indicates the opponent missed and we must serve now
 #define PLAY 1		// Indicates the is still in normal play
 #define BOUNCE 2	// Indicates that the ball has bounced off something
-#define FINISH 3
 
 // Reponse codes
 #define ERROR -1	// Indicates something went wrong, terminate immediately
