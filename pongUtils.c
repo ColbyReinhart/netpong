@@ -9,6 +9,7 @@ int netHeight;					// Height of the net
 char playerName[MAX_NAMESIZE];	// Player's name
 char opponentName[MAX_NAMESIZE];// Opponent's name
 char errorMessage[SPPBTP_MAX_MSG_LENGTH];
+int listen_socket;
 
 // Game variables
 int balls_left;					// Number of balls left in play
@@ -129,16 +130,26 @@ int sendNegativeStatus(int sock_fd, char* msg)
 	return 0;
 }
 
+// Accept a connection with a client and return the file descriptor
+int getOpponent()
+{
+	// Accept an incoming call from a client
+	printf("Waiting for new connection . . .\n");
+	int sock_fd = accept(listen_socket, NULL, NULL);
+	if (sock_fd == -1) errorQuit("Couldn't accept client socket call");
+	printf("Connected to client.\n");
+	return sock_fd;
+}
+
 // Create a socket and listen for client
-// Returns file descriptor of created socket
-int serverSetup(char* portnum)
+void serverSetup(char* portnum)
 {
 	struct sockaddr_in server_addr;	// Server address information
 	struct hostent* host_info;		// Host information
 	char hostname[HOSTLEN];			// Buffer to store host name
 
 	// Ask kernel for a socket from which to listen
-	int listen_socket = socket(PF_INET, SOCK_STREAM, 0);
+	listen_socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (listen_socket == -1) errorQuit("Couldn't get listening socket");
 
 	// Get information about the server host
@@ -170,16 +181,6 @@ int serverSetup(char* portnum)
 
 	// Allow incoming calls to Qsize = 1 on listening socket
 	if (listen(listen_socket, 1) != 0) errorQuit("Couldn't listen for calls");
-
-	// Accept an incoming call from a client
-	int sock_fd = accept(listen_socket, NULL, NULL);
-	if (sock_fd == -1) errorQuit("Couldn't accept client socket call");
-	printf("Connected to client.\n");
-
-	// Close the listening socket to free up the port
-	close(listen_socket);
-
-	return sock_fd;
 }
 
 // Create a socket and call the server provided

@@ -11,6 +11,7 @@ void set_up();
 int set_ticker();
 void ball_move(int signum);
 int interpretResponse(int response);
+void initGame();
 
 // Setup variables
 int sock_fd;					// Will hold the socket fd
@@ -29,6 +30,7 @@ extern int xttm, yttm;			// Ball x and y time to move
 extern int ydir;				// Y direction of ball (-1 up, 1 down)
 int playerPoints = 0;
 int opponentPoints = 0;
+int gameOver = 0;
 
 // USAGE:
 // Server: ./netpong PORT
@@ -61,7 +63,7 @@ int main(int argc, char* argv[])
 	if (argc == 2)
 	{
 		isClient = 0;
-		sock_fd = serverSetup(argv[1]);
+		serverSetup(argv[1]);
 	}
 	// Are we running in client mode?
 	else if (argc == 3)
@@ -74,14 +76,34 @@ int main(int argc, char* argv[])
 		printUsage();
 	}
 
-	//
-	// Game initialization
-	//
+	initGame();
 
-	// Run INTRODUCTION STATE
+	int c;
+	while ((c = getchar()) != 'Q')
+	{
+		if (c == 'k') paddle_up();
+		if (c == 'j') paddle_down();
+	}
 
+	// If we got here, then the player has quit
+	// First, set gameOver to true so the server doesn't restart a new game
+	gameOver = 1;
+
+	// Send a done response to opponent and wait for their response
+	if (sendResponse(sock_fd, DONE) == -1)
+	{
+		wrap_up();
+		exit(1);
+	}
+	interpretResponse(getResponse(sock_fd));
+}
+
+// Listen for an opponent and start up a new game
+void initGame()
+{
 	if (isClient)
 	{
+		// Establish a SPPBTP handshake
 		if (clientIntro(sock_fd) == -1)
 		{
 			close(sock_fd);
@@ -90,6 +112,10 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
+		// Accept an incoming connection
+		sock_fd = getOpponent();
+
+		// Establish a SPPBTP handshake
 		if (serverIntro(sock_fd) == -1)
 		{
 			close(sock_fd);
@@ -101,9 +127,10 @@ int main(int argc, char* argv[])
 	// Start the game
 	//
 
+	// Run setup boilerplate
 	set_up();
 
-	// Client setup
+	// Start the game for the client
 	if (isClient)
 	{
 		if (getResponse(sock_fd) == SERV)
@@ -115,12 +142,12 @@ int main(int argc, char* argv[])
 		{
 			wrap_up();
 			printf("Error: expected SERV from server\n");
-			sendResponse(sock_fd, QUIT);
+			sendNegativeStatus(sock_fd, "Expected SERV response");
 			exit(1);
 		}
 	}
 
-	// Server setup
+	// Start the game for the server
 	else
 	{
 		printStatus();
@@ -154,22 +181,6 @@ int main(int argc, char* argv[])
 			serve();
 		}
 	}
-
-	int c;
-	while ((c = getchar()) != 'Q')
-	{
-		if (c == 'k') paddle_up();
-		if (c == 'j') paddle_down();
-	}
-
-	// If we got here, then the player has quit
-	// Send a done response to opponent and wait for their response
-	if (sendResponse(sock_fd, DONE) == -1)
-	{
-		wrap_up();
-		exit(1);
-	}
-	interpretResponse(getResponse(sock_fd));
 }
 
 int set_ticker(int n_msecs)
@@ -227,9 +238,14 @@ void set_up()
 
 	// ball
 	the_ball.symbol = DFL_SYMBOL;
+	the_ball.x_ttg = the_ball.x_ttm = 0;
+	the_ball.y_ttg = the_ball.y_ttm = 0;
+
+	// scoreboard
+	opponentPoints = playerPoints = 0;
 
 	// signals
-	///signal(SIGINT, SIG_IGN);
+	signal(SIGINT, SIG_IGN);
 	signal(SIGALRM, ball_move);
 	set_ticker(1000 / ticksPerSecond);	// send millisecs per tick
 }
@@ -239,7 +255,9 @@ void wrap_up()
 	// Run closing stuff
 	set_ticker(0);
 	close(sock_fd);
+	clear();
 	endwin();
+	signal(SIGINT, SIG_DFL);
 	
 	// Print error messages, if any
 	if (strlen(errorMessage) != 0)
@@ -354,7 +372,16 @@ int interpretResponse(int response)
 		}
 
 		wrap_up();
-		exit(0);
+
+		if (isClient)
+		{
+			exit(0);
+		}
+		else
+		{
+			if (!gameOver) initGame();
+			return PLAY;
+		}
 	}
 
 	// Did the opponent say it's time to quit?
@@ -372,7 +399,16 @@ int interpretResponse(int response)
 			}
 		}
 		wrap_up();
-		exit(0);
+		
+		if (isClient)
+		{
+			exit(0);
+		}
+		else
+		{
+			if (!gameOver) initGame();
+			return PLAY;
+		}
 	}
 
 	// If we didn't get a valid resonse

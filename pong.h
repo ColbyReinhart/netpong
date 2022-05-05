@@ -24,14 +24,15 @@
 #define LOSE 0		// Indicates the opponent missed and we must serve now
 #define PLAY 1		// Indicates the is still in normal play
 #define BOUNCE 2	// Indicates that the ball has bounced off something
+#define FINISH 3
 
 // Reponse codes
 #define ERROR -1	// Indicates something went wrong, terminate immediately
-#define SERV 3
-#define BALL 4
-#define MISS 5
-#define DONE 6
-#define QUIT 7
+#define SERV 4
+#define BALL 5
+#define MISS 6
+#define DONE 7
+#define QUIT 8
 
 // Court
 #define NET_HEIGHT		16
@@ -63,8 +64,9 @@
 #define HOSTLEN 256
 #define errorQuit(msg) { perror(msg); exit(1); }
 
+int getOpponent();
 void printUsage();
-int serverSetup(char* portnum);
+void serverSetup(char* portnum);
 int clientSetup(char* host, char* port);
 int socket_check(int readResult);
 int serverIntro(int sock_fd);
