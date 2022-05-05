@@ -515,9 +515,10 @@ void ball_move(int signum)
 	// If we moved
 	if (moved)
 	{
-		// Move the ball
+		// Erase the ball
 		mvaddch(y_cur, x_cur, BLANK);
-		mvaddch(the_ball.y_pos, the_ball.x_pos, the_ball.symbol);
+		move(LINES - 1, COLS - 1);
+		refresh();
 
 		// If it's our turn to serve, do so
 		int result = bounce_or_lose(&the_ball);
@@ -526,6 +527,7 @@ void ball_move(int signum)
 		
 		// Draw the paddle and ball
 		draw_paddle();
+		mvaddch(the_ball.y_pos, the_ball.x_pos, the_ball.symbol);
 
 		// Park cursor and refresh
 		move(LINES - 1, COLS - 1);
